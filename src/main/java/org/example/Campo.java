@@ -1,6 +1,8 @@
 package org.example;
 
-public class Campo {
+import java.io.Serializable;
+
+public class Campo implements Serializable {
     String nombre;
     String tipo;
     int tamanio;

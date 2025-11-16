@@ -24,14 +24,21 @@ import java.io.RandomAccessFile;
 public class ConversorFicherosMain {
     public int tamanioEntradaDat;
     public String nombreEntrada;
-    public ArrayList<Campo> arrayCampos;
+    public ArrayList<Campo> arrayCamposDat;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        File f = new File("h.dat");
+        RandomAccessFile raf = new RandomAccessFile(f, "rw");
+        raf.writeInt(1);
+        raf.writeChars("pablo");         //Datos de prueba
+        raf.writeInt(2);
+        raf.writeChars("ana11");
         ConversorFicherosMain c = new ConversorFicherosMain();
         Scanner sc = new Scanner(System.in);
         String nombreFichero;
         String tipo;
         while (true){
+            System.out.println("------------------CONVERSOR DE FICHEROS------------------");
             System.out.println("Introduce el nombre del archivo con su extensión (cópialo a la raiz del proyecto primero) (Exit: q)");
             nombreFichero = sc.nextLine();
             if (nombreFichero.equals("q")){
@@ -45,7 +52,7 @@ public class ConversorFicherosMain {
                 System.out.println("¿Conoces la estructua del archivo? (s = Sí | Otra tecla = No)");
                 String respuesta = sc.nextLine();
                 if (respuesta.equals("s")) {
-                    System.out.println("Introduce un fichero .txt con la estructura del archivo");
+                    System.out.println("Introduce un fichero (con su extensión .txt) con la estructura del archivo");
                     String ficheroEstructura = sc.nextLine();
                     if(c.guardarEstructura(ficheroEstructura))
                         c.tratarDat(nombreFichero);
@@ -56,9 +63,9 @@ public class ConversorFicherosMain {
                     System.out.println("Lo siento, no podemos hacer nada");
                 }
             }
-            System.out.println("¿A qué tipo de archivo lo quieres convertir? (pulsa 1 ,2, 3 o 4)\n 1.- txt \n 2.- dat \n 3.- properties \n 4.- xml");
-            tipo = sc.nextLine();
             if (nombreFichero.endsWith(".txt")) {
+                System.out.println("¿A qué tipo de archivo lo quieres convertir? (pulsa 1 ,2, 3 o 4)\n 1.- txt \n 2.- dat \n 3.- properties \n 4.- xml");
+                tipo = sc.nextLine();
                 switch (tipo) {
                     case "1": {
                         System.out.println("introduce el nuevo nombre del fichero sin la extensión");
@@ -81,6 +88,8 @@ public class ConversorFicherosMain {
                 }
             }
             if (nombreFichero.endsWith(".xml")) {
+                System.out.println("¿A qué tipo de archivo lo quieres convertir? (pulsa 1 ,2, 3 o 4)\n 1.- txt \n 2.- dat \n 3.- properties \n 4.- xml");
+                tipo = sc.nextLine();
                 switch (tipo) {
                     case "1": {
                         c.xmlATxt(nombreFichero);
@@ -164,11 +173,11 @@ public class ConversorFicherosMain {
     }
 
     public void tratarDat(String ficheroDat) {
-        System.out.println("que desea hacer con los elementos:");
+        System.out.println("¿Qué desea hacer con las entradas?");
         System.out.println("1.- Borrar");
         System.out.println("2.- Modificar");
         System.out.println("3.- Añadir");
-        System.out.println("4. Leer (ver información de un elemento)");
+        System.out.println("4. Leer (ver información de una entrada)");
         Scanner sc = new Scanner(System.in);
         switch (sc.nextLine()) {
             case "1": {
@@ -180,11 +189,13 @@ public class ConversorFicherosMain {
                 System.out.println("Introduce el ID, el nombre del campo que quieras modificar y el nuevo valor ");
                 String[] valores = sc.nextLine().split(" ");
                 modificarEntradaDat(ficheroDat, Integer.parseInt(valores[0]), valores[1], valores[2]);
+                break;
             }
             case "3": {
                 System.out.println("Introduce los campos de la nueva entrada en orden");
                 String[] valores = sc.nextLine().split(" ");
                 aniadirEntradaDat(ficheroDat, valores);
+                break;
             }
             case "4": {
                 System.out.println("Introduce el ID");
@@ -193,13 +204,13 @@ public class ConversorFicherosMain {
             }
         }
         System.out.println("¿A qué tipo de archivo lo quieres convertir? (pulsa 1 ,2, 3 o 4)\n 1.- txt \n 2.- dat \n 3.- properties \n 4.- xml");
+        sc = new Scanner(System.in);
         String tipo = sc.nextLine();
         switch (tipo) {
             case "1": {
                 System.out.println("introduce el nuevo nombre del fichero sin la extensión");
                 String nuevoNombre = sc.nextLine();
                 nuevoNombre = nuevoNombre.concat(".txt");
-                System.out.println(nuevoNombre);
                 datATxt(ficheroDat, nuevoNombre);
                 break;
             }
@@ -228,12 +239,11 @@ public class ConversorFicherosMain {
             FileReader estructuraFR = new FileReader(estructuraF);
             BufferedReader br = new BufferedReader(estructuraFR);
             nombreEntrada = br.readLine();
-            br.readLine(); // nos saltamos el id que suponemos que es un entero y está al principio
-            arrayCampos = new ArrayList<>();
+            arrayCamposDat = new ArrayList<>();
             String linea;
             while ((linea = br.readLine()) != null) {
                 String[] campos = linea.split(" ");
-                arrayCampos.add(new Campo(campos[0], campos[1], Integer.parseInt(campos[2])));
+                arrayCamposDat.add(new Campo(campos[0], campos[1], Integer.parseInt(campos[2])));
                 tamanioEntradaDat += Integer.parseInt(campos[2]);
             }
         } catch (IOException e) {
@@ -247,17 +257,18 @@ public class ConversorFicherosMain {
         try (RandomAccessFile rafDat = new RandomAccessFile(datF, "r")) {
             while (rafDat.getFilePointer() < rafDat.length()) {
                 if (id == rafDat.readInt()) {
-                    System.out.println(nombreEntrada);
-                    System.out.println();
-                    for (Campo campo : arrayCampos) {
+                    System.out.println("encontrado");
+                    for (Campo campo : arrayCamposDat) {
                         switch (campo.tipo) {
-                            case "string": {
-                                String contenido = rafDat.readUTF();
-                                System.out.println(campo.nombre + ": " + contenido);
+                            case "string": { // Un string son varios chars que ocupan 2 bytes cada uno
+                                StringBuilder valor = new StringBuilder();
+                                for (int i = 0; i < campo.tamanio/2; i++)
+                                    valor.append(rafDat.readChar());
+                                System.out.println(campo.nombre + ": " + valor);
                                 break;
                             }
                             case "int": {
-                                System.out.println(campo.nombre + ": " + rafDat.readInt());
+                                System.out.println(campo.nombre + ": " + id);
                                 break;
                             }
                             case "double": {
@@ -276,7 +287,7 @@ public class ConversorFicherosMain {
                     }
                     break; // salimos del while si lo encuentra
                 }
-                rafDat.skipBytes(tamanioEntradaDat);
+                rafDat.skipBytes(tamanioEntradaDat-4);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -288,17 +299,16 @@ public class ConversorFicherosMain {
         try (RandomAccessFile rafDat = new RandomAccessFile(datF, "rw")) {
             while (rafDat.getFilePointer() < rafDat.length()) {
                 if (id == rafDat.readInt()) {
-                    rafDat.seek(rafDat.getFilePointer() - 4);
-                    byte[] b = new byte[tamanioEntradaDat + 4];
-                    for (int i = 0; i < tamanioEntradaDat + 4; i++) {
-                        b[i] = -1;
+                    byte[] b = new byte[tamanioEntradaDat -4];
+                    for (int i = 0; i < tamanioEntradaDat -4; i++) {
+                        b[i] = 1;
                     }
-                    rafDat.write(b); // sustituimos la entrada por el valor -1
+                    rafDat.write(b); // sustituimos la entrada por el valor 1
                     break; // salimos del while si lo encuentra
                 }
-                rafDat.skipBytes(tamanioEntradaDat);
+                rafDat.skipBytes(tamanioEntradaDat-4);
             }
-            System.out.println("borrado el " + nombreEntrada + "con id = " + id);
+            System.out.println("Borrado el " + nombreEntrada + " con id = " + id);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -311,16 +321,16 @@ public class ConversorFicherosMain {
                 if (id == rafDat.readInt()) {
                     rafDat.seek(rafDat.getFilePointer() - 4);
                     int posicionBorrado = 0;
-                    for (Campo campo : arrayCampos) {
+                    for (Campo campo : arrayCamposDat) {
                         if (campo.nombre.equals(nombreCampo)) {
                             rafDat.seek(rafDat.getFilePointer() + posicionBorrado);
                             switch (campo.tipo) {
                                 case "string": {
-                                    rafDat.writeUTF(nuevoValor);
-                                    int bytesRelleno = campo.tamanio - nuevoValor.length();
-                                    while (bytesRelleno > 0) {
-                                        rafDat.writeUTF(" ");
-                                        bytesRelleno--;
+                                    rafDat.writeChars(nuevoValor);
+                                    int posicionesRelleno = campo.tamanio/2 - nuevoValor.length();
+                                    while (posicionesRelleno > 0) {
+                                        rafDat.writeChar('1');
+                                        posicionesRelleno--;
                                     }
                                     break;
                                 }
@@ -347,9 +357,9 @@ public class ConversorFicherosMain {
                     }
                     break; // salimos del while si lo encuentra
                 }
-                rafDat.skipBytes(tamanioEntradaDat);
+                rafDat.skipBytes(tamanioEntradaDat-4);
             }
-            System.out.println("modificado el " + nombreEntrada + "con id = " + id + " el nuevo campo " + nombreCampo + " tiene como valor " + nuevoValor);
+            System.out.println("Modificado el " + nombreEntrada + " con id = " + id + " El nuevo campo " + nombreCampo + " tiene como valor " + nuevoValor);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -359,9 +369,8 @@ public class ConversorFicherosMain {
         File datF = new File(archivoDat);
         try (RandomAccessFile rafDat = new RandomAccessFile(datF, "rw")) {
             rafDat.seek(rafDat.length());
-            rafDat.writeInt(Integer.parseInt(valores[0])); // Suponemos que el primer valor es el id (entero)
-            for (int i = 1; i < valores.length; i++) {
-                Campo campo = arrayCampos.get(i);
+            for (int i = 0; i < valores.length; i++) {
+                Campo campo = arrayCamposDat.get(i);
                 switch (campo.tipo) {
                     case "string": {
                         rafDat.writeUTF(valores[i]);
@@ -391,6 +400,8 @@ public class ConversorFicherosMain {
     }
     public void datATxt(String nombreFichero, String nuevoNombre){
         try {
+            File txtF = new File(nuevoNombre);
+            txtF.createNewFile();
             BufferedReader bfr = new BufferedReader(new FileReader(nombreFichero));
             BufferedWriter bfw = new BufferedWriter(new FileWriter(nuevoNombre));
             String linea;
@@ -410,12 +421,13 @@ public class ConversorFicherosMain {
             ArrayList<Entrada> entradas = new ArrayList<>();
             while (rafDat.getFilePointer()<rafDat.length()){
                 Entrada entrada = new Entrada();
-                Campo campoId = new Campo(String.valueOf(rafDat.readInt()), "id", "int");
-                entrada.addCampo(campoId);
-                for (Campo campo : arrayCampos){
+                for (Campo campo : arrayCamposDat){
                     switch (campo.tipo) {
                         case "string": {
-                            entrada.addCampo(new Campo(rafDat.readUTF(), campo.nombre, campo.tipo));
+                            StringBuilder valor = new StringBuilder();
+                            for (int i = 0; i < campo.tamanio/2; i++)
+                                valor.append(rafDat.readChar());
+                            entrada.addCampo(new Campo(String.valueOf(valor), campo.nombre, campo.tipo));
                             break;
                         }
                         case "int": {
@@ -457,7 +469,7 @@ public class ConversorFicherosMain {
                 document.getDocumentElement().appendChild(raiz);
                 raiz.setAttribute("id", String.valueOf(rafDat.readInt()));
                 raiz.setIdAttribute("id", true);
-                for (Campo campo : arrayCampos){
+                for (Campo campo : arrayCamposDat){
                     switch (campo.tipo) {
                         case "string": {
                             CrearElementos(campo.nombre, rafDat.readUTF(), raiz , document);
@@ -494,7 +506,31 @@ public class ConversorFicherosMain {
         }
     }
     public void datAProperties(String nombreFichero){
+        File datF = new File(nombreFichero);
+        try (RandomAccessFile rafDat = new RandomAccessFile(datF, "r");
+             BufferedWriter bw = new BufferedWriter(new FileWriter("copiaDat.properties"))) {
 
+            while (rafDat.getFilePointer() < rafDat.length()) {
+                int id = rafDat.readInt();
+                bw.write("id" + "=" + id);
+                bw.newLine();
+
+                for (Campo campo : arrayCamposDat) {
+                    String valor = switch (campo.tipo) {
+                        case "string" -> rafDat.readUTF();
+                        case "int" -> String.valueOf(rafDat.readInt());
+                        case "double" -> String.valueOf(rafDat.readDouble());
+                        case "float" -> String.valueOf(rafDat.readFloat());
+                        case "char" -> String.valueOf(rafDat.readChar());
+                        default -> "";
+                    };
+                    bw.write(campo.nombre + "=" + valor);
+                    bw.newLine();
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
     private void CrearElementos(String nombre, String valor, Element raiz, Document documento) {
         Element aux = documento.createElement(nombre);
@@ -544,7 +580,7 @@ public class ConversorFicherosMain {
                         Element entrada = (Element) nodo;
                         String id = entrada.getAttribute("id");
                         rafDat.writeInt(Integer.parseInt(id));
-                        for (Campo campo : arrayCampos) {
+                        for (Campo campo : arrayCamposDat) {
                             String valor = entrada.getElementsByTagName(campo.nombre).item(0).getTextContent();
                             switch (campo.tipo) {
                                 case "string":

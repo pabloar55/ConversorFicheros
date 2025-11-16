@@ -1,0 +1,3 @@
+alumno
+id int 4
+nombre string 10
