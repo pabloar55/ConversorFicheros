@@ -3,6 +3,10 @@ package org.example;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+/**
+ * @author Pablo Armas
+ */
+
 public class Entrada implements Serializable {
     ArrayList<Campo> campos = new ArrayList<>();
     String nombreEntrada;

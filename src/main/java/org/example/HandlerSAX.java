@@ -8,6 +8,10 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * @author Pablo Armas
+ */
+
 public class HandlerSAX extends DefaultHandler {
     private final BufferedWriter writer;
 

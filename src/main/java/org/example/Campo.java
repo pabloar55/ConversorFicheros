@@ -2,6 +2,10 @@ package org.example;
 
 import java.io.Serializable;
 
+/**
+ * @author Pablo Armas
+ */
+
 public class Campo implements Serializable {
     String nombre;
     String tipo;
