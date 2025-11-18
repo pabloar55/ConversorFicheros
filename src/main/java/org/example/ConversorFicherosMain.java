@@ -30,7 +30,7 @@ public class ConversorFicherosMain {
         raf.writeInt(1);
         raf.writeChars("pablo");         //Datos de prueba
         raf.writeInt(2);
-        raf.writeChars("ana11");
+        raf.writeChars("ana  ");
         ConversorFicherosMain c = new ConversorFicherosMain();
         Scanner sc = new Scanner(System.in);
         String nombreFichero;
@@ -194,6 +194,7 @@ public class ConversorFicherosMain {
             System.out.println("2.- Modificar");
             System.out.println("3.- Añadir");
             System.out.println("4.- Leer (ver información de una entrada)");
+            System.out.println("c.- Convertir y salir");
             String opcion = sc.nextLine();
             if (opcion.equals("c")) {
                 break;
@@ -278,8 +279,9 @@ public class ConversorFicherosMain {
         File datF = new File(archivoDat);
         try (RandomAccessFile rafDat = new RandomAccessFile(datF, "r")) {
             while (rafDat.getFilePointer() < rafDat.length()) {
+
                 if (id == rafDat.readInt()) {
-                    System.out.println("encontrado");
+                    rafDat.seek(rafDat.getFilePointer()-4);
                     for (Campo campo : arrayCamposDat) {
                         String valor = readCampoValor(rafDat, campo);
                         System.out.println(campo.nombre + ": " + valor.trim());
@@ -359,7 +361,8 @@ public class ConversorFicherosMain {
         switch (campo.tipo) {
             case "string" -> {
                 StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < campo.tamanio / 2; i++) sb.append(raf.readChar());
+                for (int i = 0; i < campo.tamanio / 2; i++)
+                    sb.append(raf.readChar());
                 valor = sb.toString();
             }
             case "int" -> valor = String.valueOf(raf.readInt());
@@ -435,10 +438,16 @@ public class ConversorFicherosMain {
             Document document = implementation.createDocument(null, nombreEntrada, null);
             document.setXmlVersion("1.0");
             while (rafDat.getFilePointer() < rafDat.length()) {
+                int id = rafDat.readInt();
+                if (id==-1){
+                    rafDat.seek(rafDat.getFilePointer()+tamanioEntradaDat-4);
+                    continue;
+                }
                 Element raiz = document.createElement(nombreEntrada);
                 document.getDocumentElement().appendChild(raiz);
-                raiz.setAttribute("id", String.valueOf(rafDat.readInt()));
+                raiz.setAttribute("id", String.valueOf(id));
                 raiz.setIdAttribute("id", true);
+                rafDat.seek(rafDat.getFilePointer()-4);
                 for (Campo campo : arrayCamposDat) {
                     String valor = readCampoValor(rafDat, campo);
                     CrearElementos(campo.nombre, valor, raiz, document);
@@ -463,10 +472,11 @@ public class ConversorFicherosMain {
             while (rafDat.getFilePointer() < rafDat.length()) {
                 int id = rafDat.readInt();
                 if (id < 0) {
-                    rafDat.seek(rafDat.getFilePointer()+tamanioEntradaDat);
+                    rafDat.seek(rafDat.getFilePointer()+tamanioEntradaDat-4);
                     continue;
                 }
                 String nombreArchivoProp = nombreEntrada + id + ".properties";
+                rafDat.seek(rafDat.getFilePointer()-4);
                 try (BufferedWriter bw = new BufferedWriter(new FileWriter(nombreArchivoProp))) {
                     for (Campo campo : arrayCamposDat) {
                         String valor = readCampoValor(rafDat, campo);
