@@ -25,12 +25,12 @@ public class ConversorFicherosMain {
     public ArrayList<Campo> arrayCamposDat;
 
     public static void main(String[] args) throws IOException {
-        File f = new File("h.dat");
+        /*File f = new File("h.dat");
         RandomAccessFile raf = new RandomAccessFile(f, "rw");
         raf.writeInt(1);
         raf.writeChars("pablo");         //Datos de prueba
         raf.writeInt(2);
-        raf.writeChars("ana  ");
+        raf.writeChars("ana  ");*/
         ConversorFicherosMain c = new ConversorFicherosMain();
         Scanner sc = new Scanner(System.in);
         String nombreFichero;
